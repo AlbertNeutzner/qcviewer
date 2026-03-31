@@ -1,0 +1,47 @@
+name: Build macOS App (Apple Silicon)
+
+on:
+  workflow_dispatch:   # run manually from the GitHub Actions tab
+
+jobs:
+  build:
+    runs-on: macos-14  # Apple Silicon (M1) runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python (arm64)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install nuitka PyQt5 tifffile numpy ordered-set
+
+      - name: Compile with Nuitka
+        run: |
+          python -m nuitka \
+            --standalone \
+            --macos-create-app-bundle \
+            --macos-app-name="QC Viewer" \
+            --enable-plugin=pyqt5 \
+            --include-package=tifffile \
+            --include-package=numpy \
+            --output-dir=dist \
+            --remove-output \
+            qCViewer_v2.py
+
+      - name: Zip the .app bundle
+        run: |
+          cd dist
+          zip -r "../QC_Viewer_macOS.zip" "qCViewer_v2.app"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QC_Viewer_macOS
+          path: QC_Viewer_macOS.zip
+          retention-days: 30
